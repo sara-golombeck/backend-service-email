@@ -8,8 +8,9 @@ pipeline {
         AWS_REGION = credentials('aws_region')
         ECR_REPO_BACKEND = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/automarkly/emailservice-backend"
         ECR_REPO_FRONTEND = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/automarkly/emailservice-frontend"
+        ECR_REPO_WORKER = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/automarkly/emailservice-worker"
         GITOPS_REPO = 'git@github.com:sara-golombeck/gitops-automarkly.git'
-        HELM_VALUES_PATH = 'charts/automarkly/values.yaml'
+        HELM_VALUES_PATH = 'charts/email-service/values.yaml'
     }
     
     triggers {
@@ -39,10 +40,11 @@ pipeline {
             }
         }
         
-        stage('Build Application') {
+        stage('Build Applications') {
             steps {
                 script {
                     docker.build("${APP_NAME}:${BUILD_NUMBER}")
+                    docker.build("email-worker:${BUILD_NUMBER}", "./application/email-worker")
                 }
             }
         }
@@ -137,9 +139,13 @@ pipeline {
                         
                         docker tag "${APP_NAME}:${BUILD_NUMBER}" "${ECR_REPO_BACKEND}:${MAIN_TAG}"
                         docker tag "${APP_NAME}:${BUILD_NUMBER}" "${ECR_REPO_BACKEND}:latest"
+                        docker tag "email-worker:${BUILD_NUMBER}" "${ECR_REPO_WORKER}:${MAIN_TAG}"
+                        docker tag "email-worker:${BUILD_NUMBER}" "${ECR_REPO_WORKER}:latest"
                         
                         docker push "${ECR_REPO_BACKEND}:${MAIN_TAG}"
                         docker push "${ECR_REPO_BACKEND}:latest"
+                        docker push "${ECR_REPO_WORKER}:${MAIN_TAG}"
+                        docker push "${ECR_REPO_WORKER}:latest"
                     '''
                     
                     echo "Successfully pushed ${env.MAIN_TAG} to ECR"
@@ -175,12 +181,13 @@ pipeline {
                                     git config user.name "${GIT_USERNAME}"
 
                                     sed -i "s|backendTag: \\".*\\"|backendTag: \\"${MAIN_TAG}\\"|g" "${HELM_VALUES_PATH}"
+                                    sed -i "s|workerTag: \\".*\\"|workerTag: \\"${MAIN_TAG}\\"|g" "${HELM_VALUES_PATH}"
                                     
                                     if git diff --quiet "${HELM_VALUES_PATH}"; then
                                         echo "No changes to deploy - version ${MAIN_TAG} already deployed"
                                     else
                                         git add "${HELM_VALUES_PATH}"
-                                        git commit -m "Deploy backend v${MAIN_TAG} - Build ${BUILD_NUMBER}"
+                                        git commit -m "Deploy backend + worker v${MAIN_TAG} - Build ${BUILD_NUMBER}"
                                         git push origin main
                                         echo "GitOps updated: ${MAIN_TAG}"
                                     fi
@@ -233,6 +240,7 @@ pipeline {
                 rm -rf gitops-config || true
                 docker rmi "${APP_NAME}:test-${BUILD_NUMBER}" || true
                 docker rmi "${APP_NAME}:e2e-${BUILD_NUMBER}" || true
+                docker rmi "email-worker:${BUILD_NUMBER}" || true
                 docker image prune -f || true
                 rm -f .env
             '''

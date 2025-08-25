@@ -4,6 +4,8 @@ using EmailServiceAPI.Validators;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Amazon.SQS;
+using Microsoft.Extensions.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,6 +34,11 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 // Add custom services
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IQueueService, SqsQueueService>();
+
+// Add AWS services
+builder.Services.AddDefaultAWSOptions(builder.Configuration.GetAWSOptions());
+builder.Services.AddAWSService<IAmazonSQS>();
 
 // Add logging
 builder.Services.AddLogging();
@@ -59,7 +66,7 @@ app.UseCors("AllowFrontend");
 app.MapPost("/api/auth/login", async (
     [FromBody] LoginRequest request,
     IValidator<LoginRequest> validator,
-    IEmailService emailService,
+    IQueueService queueService,
     AppDbContext context,
     ILogger<Program> logger) =>
 {
@@ -100,28 +107,15 @@ app.MapPost("/api/auth/login", async (
         logger.LogInformation("User login attempt recorded: {Email}, Total attempts: {Attempts}", 
             request.Email, user.LoginAttempts);
 
-        // Process login (currently just logging, will integrate with AWS SES later)
-        var result = await emailService.SendLoginEmailAsync(request.Email);
+        // Send email request to queue
+        await queueService.SendToEmailQueueAsync(request.Email);
         
-        if (result.Success)
+        logger.LogInformation("Email request queued successfully for: {Email}", request.Email);
+        return Results.Ok(new ApiResponse<object>
         {
-            logger.LogInformation("Login email sent successfully to: {Email}", request.Email);
-            return Results.Ok(new ApiResponse<object>
-            {
-                Success = true,
-                Message = "Login email sent successfully"
-            });
-        }
-        else
-        {
-            logger.LogError("Failed to send login email to: {Email}. Error: {Error}", 
-                request.Email, result.ErrorMessage);
-            return Results.Problem(
-                detail: result.ErrorMessage,
-                statusCode: 500,
-                title: "Email sending failed"
-            );
-        }
+            Success = true,
+            Message = "Email queued for sending"
+        });
     }
     catch (Exception ex)
     {
