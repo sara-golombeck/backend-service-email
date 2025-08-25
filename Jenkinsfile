@@ -173,7 +173,7 @@ pipeline {
                                     git config user.email "${GIT_EMAIL}"
                                     git config user.name "${GIT_USERNAME}"
 
-                                    sed -i "/^backend:/,/^[^ ]/ s|tag: \\".*\\"|tag: \\"${MAIN_TAG}\\"|" "${HELM_VALUES_PATH}"
+                                    sed -i "s|backend: \\".*\\"|backend: \\"${MAIN_TAG}\\"|g" "${HELM_VALUES_PATH}"
                                     
                                     if git diff --quiet "${HELM_VALUES_PATH}"; then
                                         echo "No changes to deploy - version ${MAIN_TAG} already deployed"
