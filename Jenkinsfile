@@ -44,7 +44,7 @@ pipeline {
             steps {
                 script {
                     docker.build("${APP_NAME}:${BUILD_NUMBER}")
-                    docker.build("email-worker:${BUILD_NUMBER}", "./application/email-worker")
+                    docker.build("email-worker:${BUILD_NUMBER}", "../email-worker")
                 }
             }
         }
