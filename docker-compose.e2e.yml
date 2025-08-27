@@ -19,6 +19,7 @@ services:
       timeout: 5s
       retries: 5
 
+
   backend:
     image: automarkly-backend:${BUILD_NUMBER}
     container_name: emailservice-backend
