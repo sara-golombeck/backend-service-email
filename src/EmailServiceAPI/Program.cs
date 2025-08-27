@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Amazon.SQS;
 using Microsoft.Extensions.DependencyInjection;
+using Prometheus;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -45,6 +46,10 @@ builder.Services.AddLogging();
 
 var app = builder.Build();
 
+// Add Prometheus metrics
+app.UseMetricServer();
+app.UseHttpMetrics();
+
 // Ensure database is created
 using (var scope = app.Services.CreateScope())
 {
@@ -70,12 +75,15 @@ app.MapPost("/api/auth/login", async (
     AppDbContext context,
     ILogger<Program> logger) =>
 {
+    using var timer = MetricsService.RequestDuration.WithLabels("/api/auth/login", "POST").NewTimer();
+    
     try
     {
         // Validate request
         var validationResult = await validator.ValidateAsync(request);
         if (!validationResult.IsValid)
         {
+            MetricsService.LoginAttempts.WithLabels("invalid").Inc();
             logger.LogWarning("Login attempt with invalid email: {Email}", request.Email);
             return Results.BadRequest(new ApiResponse<object>
             {
@@ -86,6 +94,7 @@ app.MapPost("/api/auth/login", async (
         }
 
         // Save user login attempt to database
+        using var dbTimer = MetricsService.DatabaseQueryDuration.WithLabels("user_lookup").NewTimer();
         var user = await context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
         if (user == null)
         {
@@ -96,13 +105,20 @@ app.MapPost("/api/auth/login", async (
                 LastLoginAttempt = DateTime.UtcNow
             };
             context.Users.Add(user);
+            MetricsService.DatabaseOperations.WithLabels("insert", "success").Inc();
         }
         else
         {
             user.LoginAttempts++;
             user.LastLoginAttempt = DateTime.UtcNow;
+            MetricsService.DatabaseOperations.WithLabels("update", "success").Inc();
         }
         await context.SaveChangesAsync();
+        
+        // Update metrics
+        MetricsService.TotalUsers.Set(await context.Users.CountAsync());
+        MetricsService.LoginAttempts.WithLabels("success").Inc();
+        MetricsService.EmailsQueued.Inc();
         
         logger.LogInformation("User login attempt recorded: {Email}, Total attempts: {Attempts}", 
             request.Email, user.LoginAttempts);
@@ -119,6 +135,8 @@ app.MapPost("/api/auth/login", async (
     }
     catch (Exception ex)
     {
+        MetricsService.LoginAttempts.WithLabels("error").Inc();
+        MetricsService.DatabaseOperations.WithLabels("unknown", "error").Inc();
         logger.LogError(ex, "Unexpected error during login process for email: {Email}", request.Email);
         return Results.Problem(
             detail: "An unexpected error occurred",
@@ -135,6 +153,7 @@ app.MapPost("/api/auth/login", async (
 // Health check endpoint
 app.MapGet("/api/health", () =>
 {
+    using var timer = MetricsService.RequestDuration.WithLabels("/api/health", "GET").NewTimer();
     return Results.Ok(new { Status = "Healthy", Timestamp = DateTime.UtcNow });
 })
 .WithName("HealthCheck");
