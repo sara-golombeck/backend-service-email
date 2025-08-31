@@ -75,7 +75,7 @@ EOF
                     sleep 15
                     docker run --rm \
                         --network automarkly_e2e_app-network \
-                        -e BASE_URL=http://emailservice-frontend:80 \
+                        -e BASE_URL=http://emailservice-frontend:8080 \
                         "${APP_NAME}:e2e-${BUILD_NUMBER}"
                 '''
             }

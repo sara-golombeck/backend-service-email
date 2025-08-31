@@ -38,7 +38,7 @@ services:
     image: 980921758549.dkr.ecr.ap-south-1.amazonaws.com/automarkly/emailservice-frontend:latest
     container_name: emailservice-frontend
     ports:
-      - "80:80"
+      - "80:8080"
     depends_on:
       - backend
     restart: unless-stopped
