@@ -91,7 +91,7 @@ def test_health():
     resp = requests.get(f"{BASE_URL}/api/health", timeout=TIMEOUT)
     assert resp.status_code == 200
     data = resp.json()
-    assert data["status"] == "Healthy"
+    assert data["Status"] == "Healthy"
     print("PASS: Health check")
 
 def test_login_valid():
