@@ -67,7 +67,21 @@ BUILD_NUMBER=${BUILD_NUMBER}
 EOF
                     
                     docker compose -f docker-compose.e2e.yml up -d
-                    
+                                
+            echo "=== מצב קונטיינרים אחרי 5 שניות ==="
+            sleep 5
+            docker ps
+            
+            echo "=== לוגים של כל הקונטיינרים ==="
+            docker logs emailservice-frontend || echo "אין לוגים מ-frontend"
+            docker logs emailservice-backend || echo "אין לוגים מ-backend"  
+            docker logs emailservice-worker || echo "אין לוגים מ-worker"
+            docker logs automarkly_e2e_postgres || echo "אין לוגים מ-postgres"
+            
+            echo "=== מצב קונטיינרים אחרי 15 שניות נוספות ==="
+            sleep 15
+            docker ps
+
                     docker build -f tests/integration/Dockerfile -t "${APP_NAME}:e2e-${BUILD_NUMBER}" tests/integration/
                     sleep 15
                     docker run --rm \
