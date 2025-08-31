@@ -1,67 +1,4 @@
-# version: '3.8'
-
-# services:
-#   postgres:
-#     image: postgres:15-alpine
-#     container_name: ${COMPOSE_PROJECT_NAME}_postgres
-#     restart: unless-stopped
-#     environment:
-#       POSTGRES_DB: ${POSTGRES_DB}
-#       POSTGRES_USER: ${POSTGRES_USER}
-#       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-#     volumes:
-#       - postgres_data:/var/lib/postgresql/data
-#     networks:
-#       - app-network
-#     healthcheck:
-#       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
-#       interval: 10s
-#       timeout: 5s
-#       retries: 5
-
-#   backend:
-#     image: automarkly-backend:${BUILD_NUMBER}
-#     container_name: emailservice-backend
-#     environment:
-#       - ASPNETCORE_ENVIRONMENT=Production
-#       - ASPNETCORE_URLS=http://+:8080
-#       - ConnectionStrings__DefaultConnection=Host=${COMPOSE_PROJECT_NAME}_postgres;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
-#       - AWS_DEFAULT_REGION=ap-south-1
-#     restart: unless-stopped
-#     depends_on:
-#       postgres:
-#         condition: service_healthy
-#     networks:
-#       - app-network
-
-#   frontend:
-#     image: ${FRONTEND_IMAGE}:latest
-#     container_name: emailservice-frontend
-#     ports:
-#       - "80:80"
-#     depends_on:
-#       - backend
-#     restart: unless-stopped
-#     networks:
-#       - app-network
-
-#   email-worker:
-#     image: ${WORKER_IMAGE}:latest
-#     container_name: emailservice-worker
-#     environment:
-#       - AWS_DEFAULT_REGION=ap-south-1
-#     restart: unless-stopped
-#     depends_on:
-#       - backend
-#     networks:
-#       - app-network
-
-# networks:
-#   app-network:
-#     driver: bridge
-
-# volumes:
-#   postgres_data:
+version: '3.8'
 
 services:
   postgres:
@@ -98,7 +35,7 @@ services:
       - app-network
 
   frontend:
-    image: ${FRONTEND_IMAGE}:${TAG_VERSION}
+    image: ${FRONTEND_IMAGE}:latest
     container_name: emailservice-frontend
     ports:
       - "80:80"
@@ -109,7 +46,7 @@ services:
       - app-network
 
   email-worker:
-    image: ${WORKER_IMAGE}:${TAG_VERSION}
+    image: ${WORKER_IMAGE}:latest
     container_name: emailservice-worker
     environment:
       - AWS_DEFAULT_REGION=ap-south-1
