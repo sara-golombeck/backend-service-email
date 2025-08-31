@@ -34,7 +34,7 @@ pipeline {
                     docker build -f Dockerfile.test -t "${APP_NAME}:test-${BUILD_NUMBER}" .
                     mkdir -p test-results
                     docker run --rm \
-                        -v "${PWD}/test-results:/app/test-results" \
+                        -v "${PWD}/test-results:/src/test-results" \
                         "${APP_NAME}:test-${BUILD_NUMBER}"
                 '''
             }
