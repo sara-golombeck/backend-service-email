@@ -21,7 +21,7 @@ services:
 
   backend:
     image: automarkly-backend:${BUILD_NUMBER}
-    container_name: emailservice-backend
+    container_name: backend
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:8080
