@@ -19,7 +19,6 @@ services:
       timeout: 5s
       retries: 5
 
-
   backend:
     image: automarkly-backend:${BUILD_NUMBER}
     container_name: emailservice-backend
@@ -27,6 +26,7 @@ services:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:8080
       - ConnectionStrings__DefaultConnection=Host=${COMPOSE_PROJECT_NAME}_postgres;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      - AWS_DEFAULT_REGION=ap-south-1
     restart: unless-stopped
     depends_on:
       postgres:
@@ -35,13 +35,24 @@ services:
       - app-network
 
   frontend:
-    image: ${ECR_TAG_FRONT}:latest
+    image: ${FRONTEND_IMAGE}:latest
     container_name: emailservice-frontend
     ports:
       - "80:80"
     depends_on:
       - backend
     restart: unless-stopped
+    networks:
+      - app-network
+
+  email-worker:
+    image: ${WORKER_IMAGE}:latest
+    container_name: emailservice-worker
+    environment:
+      - AWS_DEFAULT_REGION=ap-south-1
+    restart: unless-stopped
+    depends_on:
+      - backend
     networks:
       - app-network
 
