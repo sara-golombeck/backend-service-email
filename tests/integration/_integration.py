@@ -91,6 +91,7 @@ def test_health():
     resp = requests.get(f"{BASE_URL}/api/health", timeout=TIMEOUT)
     assert resp.status_code == 200
     data = resp.json()
+    print(f"DEBUG: Health response: {data}")
     assert data["Status"] == "Healthy"
     print("PASS: Health check")
 
@@ -100,7 +101,8 @@ def test_login_valid():
     resp = requests.post(f"{BASE_URL}/api/auth/login", json=payload, timeout=TIMEOUT)
     assert resp.status_code == 200
     data = resp.json()
-    assert data["success"] is True
+    print(f"DEBUG: Login response: {data}")
+    assert data["Success"] is True
     print("PASS: Valid login")
 
 def test_login_invalid():
@@ -109,7 +111,7 @@ def test_login_invalid():
     resp = requests.post(f"{BASE_URL}/api/auth/login", json=payload, timeout=TIMEOUT)
     assert resp.status_code == 400
     data = resp.json()
-    assert data["success"] is False
+    assert data["Success"] is False
     print("PASS: Invalid email validation")
 
 def test_performance():
