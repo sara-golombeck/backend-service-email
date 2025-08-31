@@ -11,4 +11,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Default command
-CMD ["python", "_integration.py"]
+CMD ["pytest", "test_integration.py", "-v", "--tb=short"]
