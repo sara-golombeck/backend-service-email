@@ -2,7 +2,6 @@ pipeline {
     agent any
     
     environment {
-        
         APP_NAME = 'automarkly-backend'
         BUILD_NUMBER = "${env.BUILD_NUMBER}"
         AWS_ACCOUNT_ID = credentials('aws-account-id')
@@ -12,8 +11,9 @@ pipeline {
         HELM_VALUES_PATH = 'charts/email-service/values.yaml'
         
         // Images for E2E tests
-FRONTEND_IMAGE = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/automarkly/emailservice-frontend"
-WORKER_IMAGE = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/automarkly/emailservice-worker"    }
+        FRONTEND_IMAGE = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/automarkly/emailservice-frontend"
+        WORKER_IMAGE = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/automarkly/emailservice-worker"
+    }
     
     triggers {
         githubPush()
@@ -67,21 +67,7 @@ BUILD_NUMBER=${BUILD_NUMBER}
 EOF
                     
                     docker compose -f docker-compose.e2e.yml up -d
-                                
-            echo "=== מצב קונטיינרים אחרי 5 שניות ==="
-            sleep 5
-            docker ps
-            
-            echo "=== לוגים של כל הקונטיינרים ==="
-            docker logs emailservice-frontend || echo "אין לוגים מ-frontend"
-            docker logs emailservice-backend || echo "אין לוגים מ-backend"  
-            docker logs emailservice-worker || echo "אין לוגים מ-worker"
-            docker logs automarkly_e2e_postgres || echo "אין לוגים מ-postgres"
-            
-            echo "=== מצב קונטיינרים אחרי 15 שניות נוספות ==="
-            sleep 15
-            docker ps
-
+                    
                     docker build -f tests/integration/Dockerfile -t "${APP_NAME}:e2e-${BUILD_NUMBER}" tests/integration/
                     sleep 15
                     docker run --rm \
