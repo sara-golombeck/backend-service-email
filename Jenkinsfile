@@ -61,12 +61,15 @@ POSTGRES_DB=automarkly_test
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=postgres123
 COMPOSE_PROJECT_NAME=automarkly_e2e
-FRONTEND_IMAGE=${FRONTEND_IMAGE}
-WORKER_IMAGE=${WORKER_IMAGE}
 BUILD_NUMBER=${BUILD_NUMBER}
 EOF
                     
                     docker compose -f docker-compose.e2e.yml up -d
+                    
+                    # Check container status
+                    sleep 10
+                    docker ps
+                    docker logs emailservice-frontend || true
                     
                     docker build -f tests/integration/Dockerfile -t "${APP_NAME}:e2e-${BUILD_NUMBER}" tests/integration/
                     sleep 15
