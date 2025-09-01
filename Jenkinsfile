@@ -100,6 +100,7 @@ pipeline {
                    '''
                }
                
+               
                timeout(time: 5, unit: 'MINUTES') {
                    sh '''
                        docker push "${ECR_STAGING_BACKEND}:${BUILD_NUMBER}"
