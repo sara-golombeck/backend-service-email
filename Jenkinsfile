@@ -357,6 +357,7 @@ pipeline {
            steps {
                sshagent(['github']) {
                    sh '''
+                       echo "GITOPS_REPO: ${GITOPS_REPO}"
                        rm -rf gitops-config
                        git clone "${GITOPS_REPO}" gitops-config
                    '''
