@@ -272,21 +272,26 @@ pipeline {
            }
        }
        
-       stage('Create Version Tag') {
-           when { 
-               allOf {
-                   branch 'main'
-                   expression { currentBuild.result == null || currentBuild.result == 'SUCCESS' }
-               }
-           }
-           steps {
-               script {
-                   env.MAIN_TAG = sh(script: '''
-                       docker run --rm -v "${PWD}:/repo" gittools/gitversion:latest /repo -showvariable SemVer
-                   ''', returnStdout: true).trim()
-               }
-           }
+stage('Create Version Tag') {
+   when { 
+       allOf {
+           branch 'main'
+           expression { currentBuild.result == null || currentBuild.result == 'SUCCESS' }
        }
+   }
+   steps {
+       script {
+           sh '''
+               curl -L https://github.com/GitTools/GitVersion/releases/download/6.4.0/gitversion-linux-x64-6.4.0.tar.gz -o gitversion.tar.gz
+               tar -xzf gitversion.tar.gz
+               chmod +x gitversion
+               ./gitversion -showvariable SemVer > version.txt
+           '''
+           env.MAIN_TAG = readFile('version.txt').trim()
+           sh 'rm -f gitversion* version.txt'
+       }
+   }
+}
        
        stage('Promote to Production') {
            when { 
