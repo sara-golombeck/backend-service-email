@@ -206,6 +206,13 @@ pipeline {
    
    stages {
        stage('Checkout') {
+           when {
+               anyOf {
+                   branch 'main'
+                   branch 'feature/*'
+                   branch 'release/*'
+               }
+           }
            steps {
                checkout scm
                sshagent(['github']) {
@@ -215,6 +222,13 @@ pipeline {
        }
        
        stage('Unit Tests') {
+           when {
+               anyOf {
+                   branch 'main'
+                   branch 'feature/*'
+                   branch 'release/*'
+               }
+           }
            steps {
                sh '''
                    docker build -f Dockerfile.test -t "${APP_NAME}:test-${BUILD_NUMBER}" .
@@ -232,6 +246,13 @@ pipeline {
        }
        
        stage('Package') {
+           when {
+               anyOf {
+                   branch 'main'
+                   branch 'feature/*'
+                   branch 'release/*'
+               }
+           }
            steps {
                timeout(time: 10, unit: 'MINUTES') {
                    sh '''
@@ -243,6 +264,13 @@ pipeline {
        }
        
        stage('Push to Staging') {
+           when {
+               anyOf {
+                   branch 'main'
+                   branch 'feature/*'
+                   branch 'release/*'
+               }
+           }
            steps {
                retry(3) {
                    sh '''
@@ -260,6 +288,13 @@ pipeline {
        }
        
        stage('Run E2E Tests') {
+           when {
+               anyOf {
+                   branch 'main'
+                   branch 'feature/*'
+                   branch 'release/*'
+               }
+           }
            steps {
                build job: 'e2e-email-service',
                      parameters: [
@@ -272,32 +307,32 @@ pipeline {
            }
        }
        
-stage('Create Version Tag') {
-   when { 
-       allOf {
-           branch 'main'
-           expression { currentBuild.result == null || currentBuild.result == 'SUCCESS' }
+       stage('Create Version Tag') {
+           when { 
+               anyOf {
+                   branch 'main'
+                   branch 'release/*'
+               }
+           }
+           steps {
+               script {
+                   sh '''
+                       curl -L https://github.com/GitTools/GitVersion/releases/download/6.4.0/gitversion-linux-x64-6.4.0.tar.gz -o gitversion.tar.gz
+                       tar -xzf gitversion.tar.gz
+                       chmod +x gitversion
+                       ./gitversion -showvariable SemVer > version.txt
+                   '''
+                   env.MAIN_TAG = readFile('version.txt').trim()
+                   sh 'rm -f gitversion* version.txt'
+               }
+           }
        }
-   }
-   steps {
-       script {
-           sh '''
-               curl -L https://github.com/GitTools/GitVersion/releases/download/6.4.0/gitversion-linux-x64-6.4.0.tar.gz -o gitversion.tar.gz
-               tar -xzf gitversion.tar.gz
-               chmod +x gitversion
-               ./gitversion -showvariable SemVer > version.txt
-           '''
-           env.MAIN_TAG = readFile('version.txt').trim()
-           sh 'rm -f gitversion* version.txt'
-       }
-   }
-}
        
        stage('Promote to Production') {
            when { 
-               allOf {
+               anyOf {
                    branch 'main'
-                   expression { currentBuild.result == null || currentBuild.result == 'SUCCESS' }
+                   branch 'release/*'
                }
            }
            steps {
@@ -314,9 +349,9 @@ stage('Create Version Tag') {
        
        stage('Deploy via GitOps') {
            when { 
-               allOf {
+               anyOf {
                    branch 'main'
-                   expression { currentBuild.result == null || currentBuild.result == 'SUCCESS' }
+                   branch 'release/*'
                }
            }
            steps {
