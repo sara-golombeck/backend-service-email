@@ -10,7 +10,6 @@ COPY tests/EmailServiceAPI.Tests/*.csproj tests/EmailServiceAPI.Tests/
 
 # Restore packages
 RUN dotnet restore
-
 # Copy all source code
 COPY . .
 
