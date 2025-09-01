@@ -198,6 +198,7 @@ pipeline {
        
        GITOPS_REPO = credentials('gitops-repo-url')
        HELM_VALUES_PATH = 'charts/email-service/values.yaml'
+       PRODUCTION_URL = credentials('production-url')
    }
    
    triggers {
@@ -354,7 +355,7 @@ pipeline {
                    branch 'release/*'
                }
            }
-           
+
            steps {
                sshagent(['github']) {
                    sh '''
@@ -387,8 +388,24 @@ pipeline {
                }
            }
        }
+       
+       stage('Production Smoke Tests') {
+           when { 
+               anyOf {
+                   branch 'main'
+                   branch 'release/*'
+               }
+           }
+           steps {
+               timeout(time: 2, unit: 'MINUTES') {
+                   sh '''
+                       curl -f "${PRODUCTION_URL}/health"
+                       curl -f "${PRODUCTION_URL}/api/status"
+                   '''
+               }
+           }
+       }
    }
-   
    post {
        always {
            script {
