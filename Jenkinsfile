@@ -149,7 +149,7 @@ pipeline {
            }
        }
        
-       stage('Promote to Production') {
+       stage('Deploy') {
            when { 
                anyOf {
                    branch 'main'
